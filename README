@@ -1,0 +1,11 @@
+# Coral Reef Label Transfering Project
+
+The goal of this project is to transfer labels from the 2D annotations
+on the mosaiced images to the corresponding 3D pointcloud. The current
+plan is to oversegment the mosaic into small superpixels, each with a
+homogenous classification label, and match them to superpixels found
+in the source imagery used to create the mosaic and 3D model. Then,
+we can use PhotoScan to transfer the label masks onto the pointcloud.
+
+Currently, it it reporting ~80% accuracy for transfering superpixel
+labels, and the pointcloud annotation has not yet been implemented.
