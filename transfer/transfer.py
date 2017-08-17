@@ -23,7 +23,7 @@ def main():
 
 	# Read images:
 	print("Reading images...")
-	mosaic, mosaic_annotated = get_mosaic(config.mosaic)
+	mosaic, mosaic_annotated = get_mosaic(config.mosaic_images)
 	images, filenames = get_images(config.img_dir)
 
 	# Segment mosaic
@@ -34,19 +34,46 @@ def main():
 	mosaic_features = preprocessor.process(mosaic_features)
 
 	# Train SVM
-	classifier = train_svm(mosaic_features, mosaic_labels, config.svm, config.processors)
-	save_classifier(classifier, config.svm, config.svm_file_compression)
+	classifier = train_svm(mosaic_features, mosaic_labels, config.svm_params, config.processors)
+	save_classifier(classifier, config.save["svm"], config.save["svm_compression"])
 
-	# Classify points
-	masks = []
-	for img in images:
-		mask = classify(img, classifier, avg_size, label_db, config.superpixel, config.processors)
-		masks.append(mask)
+	# Classify points, write out masks
+	# Not sure whether to put classifier and preprocessor in shared mem or args
+	manager = mp.Manager()
+	shared = manager.Namespace(
+		classifier = classifier,
+		preprocessor = preprocessor,
+		avg_size = avg_size,
+		label_db = label_db,
+		spixel_config = config.superpixel,
+		masks_dir = config.save["masks_dir"],
+	)
 
-	# Write out masks
-	for mask, base_fn in zip(masks, filenames):
-		fn = base_fn.replace(".png", "_mask.png")
-		cv2.imwrite(fn, mask)
+	args = zip(images, filenames, it.repeat(shared))
+	args = tqdm(args, total=len(images))
+
+	threadpool = manager.Pool(config.processors)
+	masks = threadpool.starmap(classify, args, chunksize=15)
+	threadpool.close()
+
+	# masks = []
+	# for img, base_fn in zip(images, filenames):
+	# 	mask = classify(img, classifier, preprocessor, avg_size, label_db, config.superpixel, config.processors)
+	# 	fn = get_mask_filename(base_fn, config.save["masks_dir"])
+	# 	cv2.imwrite(fn, mask)
+	# 	masks.append(mask)
+
+	# args = zip(
+	# 	images,
+	# 	it.repeat(classifier),
+	# 	it.repeat(preprocessor),
+	# 	it.repeat(avg_size),
+	# 	it.repeat(label_db),
+	# 	it.repeat(config.superpixel),
+	# 	filenames,
+	# 	it.repeat(config.save["masks_dir"]),
+	# 	it.repeat(config.processors)
+	# )
 
 #####################
 ## HELPER METHODS: ##
@@ -83,32 +110,48 @@ def get_mosaic_features(img, mask, spixel_config, processors):
 
 	return features, labels, avg_size, id_label_db
 
-def classify(img, classifier, avg_size, label_db, spixel_config, processors):
+def classify(img, base_fn, shared):
+	# (img, classifier, preprocessor, avg_size, label_db, spixel_config, processors)
 
 	## OVERSEGMENT: ##
-	spixel_args = (spixel_config["approx_num_superpixels"], spixel_config["num_levels"], spixel_config["iterations"])
+	spixel_args = (shared.spixel_config["approx_num_superpixels"], shared.spixel_config["num_levels"], shared.spixel_config["iterations"])
 	segment_mask, num_spixels = oversegment(img, spixel_args)
 
 	## EXTRACT SUPERPIXELS: ##
-	threadpool = mp.Pool(processors)
-	args = zip(range(num_spixels), it.repeat(img), it.repeat(None), it.repeat(segment_mask), it.repeat(avg_size))
-	args = tqdm(args, total=num_spixels)
-	superpixels = threadpool.starmap(create_spixel, args)
-	threadpool.close()
+
+	superpixels = [create_spixel(i, img, None, segment_mask, shared.avg_size) for i in range(num_spixels)]
+
+	# superpixels = []
+	# for i in range(num_spixels):
+	# 	pixel = create_spixel(i, img, None, segment_mask, shared.avg_size)
+	# 	superpixels.append(pixel)
+
+	# threadpool = mp.Pool(processors)
+	# args = zip(range(num_spixels), it.repeat(img), it.repeat(None), it.repeat(segment_mask), it.repeat(avg_size))
+	# args = tqdm(args, total=num_spixels)
+	# superpixels = threadpool.starmap(create_spixel, args)
+	# threadpool.close()
 
 	## FORMAT FEATURES: ##
 	features = [pixel.features for pixel in superpixels] # if pixel is not None]
 	features = np.array(features)
 
+	## PREPROCESS FEATURES: ##
+	shared.preprocessor.process(features)
+
 	## PREDICT CLASSES FOR FEATURES: ##
-	pred = classifier.predict(features)
-	predictions = [label_db[p] for p in pred]
+	pred = shared.classifier.predict(features)
+	predictions = [shared.label_db[p] for p in pred]
 
 	## LABEL THE IMAGE: ##
 	mask = np.zeros(segment_mask.shape, dtype=np.uint8)
 	for i in range(num_spixels):
 		if predictions[i] != 0:
 			mask[np.where(segment_mask == i)] = predictions[i]
+
+	## WRITE OUT MASK: ##
+	mask_path = get_mask_filepath(shared.mask_dir, base_fn)
+	cv2.imwrite(mask_path, mask)
 
 	return mask
 
@@ -129,12 +172,28 @@ def get_mosaic(image_config):
 	return mosaic, mask
 
 def get_images(image_dir):
-	filelist = glob.glob(os.path.join(image_dir, "*.png"))
+	filelist = glob.glob(os.path.join(image_dir, "*/*.png"))
 	images = []
 	for fn in filelist:
 		img = cv2.imread(fn)
 		images.append(img)
 	return zip(images, filelist)
+
+def get_mask_filepath(dir, img_fn):
+	base_fn = img_fn.split('/')[-1].split('.')[0]
+	fn = base_fn + "_mask.png"
+	path = os.path.join(dir, fn)
+	return path
+
+def get_preprocessor(config, features):
+	print("Fitting preprocessor...")
+	preprocessor = Preprocessor(normalize=config["normalize"],
+								reduce_features=config["reduce_features"],
+								reducer_type=config["reducer_type"],
+								explained_variance=config["explained_variance"])
+	preprocessor.train(features)
+	return preprocessor
+
 
 #####################
 ## CONFIG METHODS: ##
@@ -143,6 +202,30 @@ def get_images(image_dir):
 class Namespace:
 	def __init__(self, **kwargs):
 		self.__dict__.update(kwargs)
+
+def init():
+	# get config
+	config = init_config()
+
+	# make directory for output
+	try:
+		os.mkdir(config.save["dir"])
+		os.mkdir(config.save["masks_dir"])
+	except FileExistsError:
+		print("Error. Version {} already exists.".format(config.version))
+		exit()
+
+	# write config file
+	with open(config.save["config"], 'w') as config_file:
+		yaml.dump(config, config_file)
+
+	# setup logging
+	global saved_stdout
+	saved_stdout = sys.stdout
+	log_file = open(config.save["log"], 'w')
+	sys.stdout = writer(sys.stdout, log_file)
+
+	return config
 
 def init_config():
 
@@ -154,6 +237,7 @@ def init_config():
 		image = "imgs/mosaic.png",
 		annotation = "imgs/mosaic_mask.png"
 	)
+	img_dir = "/media/ml/2tdata/FAN_2012_B4/TAB_2012_B4_pics/Red_55/"
 
 	# superpixels
 	mosaic_superpixels = dict(
@@ -185,9 +269,11 @@ def init_config():
 
 	# saving
 	save = dict(
+		dir = "results/v{0:d}/".format(VERSION),
 		config = "results/v{0:d}/config.yml".format(VERSION),
 		log = "results/v{0:d}/log.txt".format(VERSION),
 		svm = "results/v{0:d}/svm.pkl".format(VERSION),
+		masks_dir = "results/v{0:d}/masks/".format(VERSION),
 		svm_compression = 3
 	)
 
@@ -195,8 +281,9 @@ def init_config():
 		version = VERSION,
 		processors = PROCESSORS,
 		mosaic_images = images,
+		img_dir = img_dir,
 		mosaic_superpixels = mosaic_superpixels,
-		source_superpixels = src_superpixels,
+		superpixel = src_superpixels,
 		preprocessor = preprocessor,
 		svm_params = svm_params,
 		save = save
