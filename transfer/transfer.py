@@ -30,6 +30,7 @@ def main():
 
 	# Segment mosaic
 	mosaic_features, mosaic_labels, avg_size, label_db = get_mosaic_features(mosaic, mosaic_annotated, config.mosaic_superpixels, config.processors)
+    print("Average size: ", avg_size)
 
 	# Setup preprocessor
 	preprocessor = get_preprocessor(config.preprocessor, mosaic_features)
@@ -90,7 +91,7 @@ def get_mosaic_features(img, mask, spixel_config, processors):
 
 	## GET AVG SUPERPIXEL SIZE: ##
 	print("Calculating average superpixel shape...")
-	avg_size = calc_avg_size(segment_mask, int(num_spixels/10))
+	avg_size = calc_avg_size(segment_mask, int(num_spixels/25))
 
 	## EXTRACT SUPERPIXELS: ##
 	print("Computing features and creating SuperPixels...")
