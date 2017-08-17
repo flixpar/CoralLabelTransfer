@@ -1,8 +1,8 @@
 import cv2
 import numpy as np
 
-from sklearn import OneVsRestClassifier
-from sklearn import SVC
+from sklearn.multiclass import OneVsRestClassifier
+from sklearn.svm import SVC
 
 import multiprocessing as mp
 import itertools as it
@@ -11,6 +11,7 @@ import os
 import yaml
 import joblib
 from tqdm import tqdm
+import glob
 
 from SuperPixel import SuperPixel
 from Preprocessor import Preprocessor, Reducers
@@ -27,7 +28,7 @@ def main():
 	images, filenames = get_images(config.img_dir)
 
 	# Segment mosaic
-	mosaic_features, mosaic_labels, avg_size, label_db = get_mosaic_features(mosaic, mosaic_annotated, config.mosaic_superpixel, config.processors)
+	mosaic_features, mosaic_labels, avg_size, label_db = get_mosaic_features(mosaic, mosaic_annotated, config.mosaic_superpixels, config.processors)
 
 	# Setup preprocessor
 	preprocessor = get_preprocessor(config.preprocessor, mosaic_features)
@@ -101,9 +102,9 @@ def get_mosaic_features(img, mask, spixel_config, processors):
 
 	## FORMAT DATA: ##
 	print("Formatting data...")
-	features = [pixel.features for pixel in spixels if pixel is not None]
-	labels = [pixel.id for pixel in spixels if pixel is not None]
-	id_label_db = {pixel.id: pixel.label for pixel in spixels}
+	features = [pixel.features for pixel in superpixels if pixel is not None]
+	labels = [pixel.id for pixel in superpixels if pixel is not None]
+	id_label_db = {pixel.id: pixel.label for pixel in superpixels}
 
 	features = np.array(features)
 	labels = np.array(labels)
@@ -177,7 +178,7 @@ def get_images(image_dir):
 	for fn in filelist:
 		img = cv2.imread(fn)
 		images.append(img)
-	return zip(images, filelist)
+	return images, filelist
 
 def get_mask_filepath(dir, img_fn):
 	base_fn = img_fn.split('/')[-1].split('.')[0]
@@ -194,6 +195,32 @@ def get_preprocessor(config, features):
 	preprocessor.train(features)
 	return preprocessor
 
+def train_svm(features, labels, params, n_processors):
+
+	print("Training SVM...")
+	start_time = time.time()
+
+	svm = SVC(**params)
+	classifier = OneVsRestClassifier(svm, n_jobs=n_processors)
+	classifier.fit(features, labels)
+
+	end_time = time.time()
+	elapsed_time = end_time - start_time
+	print("Training took %.1f seconds" % elapsed_time)
+
+	return classifier
+
+def save_classifier(classifier, filename, compression):
+	print("Saving SVM...")
+	start_time = time.time()
+
+	svm_file = open(filename, 'wb')
+	joblib.dump(classifier, svm_file, compress=compression)
+	svm_file.close()
+
+	end_time = time.time()
+	elapsed_time = end_time - start_time
+	print("Saving SVM took %.1f seconds" % elapsed_time)
 
 #####################
 ## CONFIG METHODS: ##
@@ -255,7 +282,7 @@ def init_config():
 	preprocessor = dict(
 		normalize = True,
 		reduce_features = True,
-		reducer_type = Reducers.pca,
+		reducer_type = Reducers.feature_selection,
 		explained_variance = 0.985
 	)
 
@@ -290,3 +317,6 @@ def init_config():
 	)
 
 	return params
+
+if __name__ == "__main__":
+	main()
