@@ -6,10 +6,12 @@ mask_pattern = mask_dir + "{filename}_mask.png"
 
 doc = PhotoScan.app.document
 chunk = doc.chunk
+dense_cloud = doc.dense_cloud
 cameras = chunk.cameras
 
 chunk.importMasks(path=mask_pattern, method="file")
-
+dense_cloud.selectMaskedPoints(cameras)
+dense_cloud.assignClassToSelection(to=1)
 
 ## UNUSED: ##
 # masklist = glob.glob(mask_pattern)
