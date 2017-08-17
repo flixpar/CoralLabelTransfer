@@ -10,6 +10,7 @@ import itertools as it
 import os
 import yaml
 import joblib
+import time
 from tqdm import tqdm
 import glob
 
@@ -89,7 +90,7 @@ def get_mosaic_features(img, mask, spixel_config, processors):
 
 	## GET AVG SUPERPIXEL SIZE: ##
 	print("Calculating average superpixel shape...")
-	avg_size = calc_avg_size(segment_mask, int(num_spixels/4))
+	avg_size = calc_avg_size(segment_mask, int(num_spixels/10))
 
 	## EXTRACT SUPERPIXELS: ##
 	print("Computing features and creating SuperPixels...")
