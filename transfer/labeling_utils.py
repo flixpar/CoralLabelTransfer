@@ -21,7 +21,7 @@ def oversegment(img, args):
 	return labels, num_superpixels
 
 # takes the superpixel mask and calculates the average size of the superpixels
-def calcAvgSize(mask_img, num_superpixels):
+def calc_avg_size(mask_img, num_superpixels):
 
 	avg_width = 0
 	avg_height = 0

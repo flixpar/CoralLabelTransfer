@@ -1,0 +1,12 @@
+*.pyc
+.DS_Store
+._*
+*.png
+__pycache__
+results
+saves
+old
+results_v1
+imgs
+transfer/imgs
+transfer/results
