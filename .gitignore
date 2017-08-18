@@ -10,3 +10,4 @@ results_v1
 imgs
 transfer/imgs
 transfer/results
+*.pkl

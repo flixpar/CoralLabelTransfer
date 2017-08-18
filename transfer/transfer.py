@@ -1,18 +1,20 @@
-import cv2
-import numpy as np
+import os
+import time
+import glob
 
-from sklearn.multiclass import OneVsRestClassifier
-from sklearn.svm import SVC
+import yaml
+import pickle
+import joblib
+from tqdm import tqdm
 
 import multiprocessing as mp
 import itertools as it
 
-import os
-import yaml
-import joblib
-import time
-from tqdm import tqdm
-import glob
+import numpy as np
+import cv2
+
+from sklearn.multiclass import OneVsRestClassifier
+from sklearn.svm import SVC
 
 from SuperPixel import SuperPixel
 from Preprocessor import Preprocessor, Reducers
@@ -28,17 +30,28 @@ def main():
 	mosaic, mosaic_annotated = get_mosaic(config.mosaic_images)
 	images, filenames = get_images(config.img_dir)
 
-	# Segment mosaic
-	mosaic_features, mosaic_labels, avg_size, label_db = get_mosaic_features(mosaic, mosaic_annotated, config.mosaic_superpixels, config.processors)
-	print("Average size: ", avg_size)
+	if config.mode == filemode.WRITE:
 
-	# Setup preprocessor
-	preprocessor = get_preprocessor(config.preprocessor, mosaic_features)
-	mosaic_features = preprocessor.process(mosaic_features)
+		# Segment mosaic
+		mosaic_features, mosaic_labels, avg_size, label_db = get_mosaic_features(mosaic, mosaic_annotated, config.mosaic_superpixels, config.processors)
+		print("Average size: ", avg_size)
 
-	# Train SVM
-	classifier = train_svm(mosaic_features, mosaic_labels, config.svm_params, config.processors)
-	save_classifier(classifier, config.save["svm"], config.save["svm_compression"])
+		# Setup preprocessor
+		preprocessor = get_preprocessor(config.preprocessor, mosaic_features)
+		mosaic_features = preprocessor.process(mosaic_features)
+
+		# Save important information
+		save_info(preprocessor, avg_size, label_db, config.save["info"])
+
+		# Train SVM
+		classifier = train_svm(mosaic_features, mosaic_labels, config.svm_params, config.processors)
+		save_classifier(classifier, config.save["svm"], config.save["svm_compression"])
+
+	else:
+
+		# Load info and classifier
+		preprocessor, avg_size, label_db = load_info(config.save["info"])
+		classifier = joblib.load(config.save["svm"])
 
 	# Classify points, write out masks
 	# Not sure whether to put classifier and preprocessor in shared mem or args
@@ -224,25 +237,32 @@ def save_classifier(classifier, filename, compression):
 	elapsed_time = end_time - start_time
 	print("Saving SVM took %.1f seconds" % elapsed_time)
 
+def save_info(preprocessor, avg_size, label_db, filename):
+	info = (preprocessor, avg_size, label_db)
+	info_file = open(filename, 'wb')
+	pickle.dump(info, info_file)
+
+def load_info(filename):
+	info_file = open(filename, 'rb')
+	preprocessor, avg_size, label_db = pickle.load(info_file)
+	return preprocessor, avg_size, label_db
+
 #####################
 ## CONFIG METHODS: ##
 #####################
-
-class Namespace:
-	def __init__(self, **kwargs):
-		self.__dict__.update(kwargs)
 
 def init():
 	# get config
 	config = init_config()
 
 	# make directory for output
-	try:
-		os.mkdir(config.save["dir"])
-		os.mkdir(config.save["masks_dir"])
-	except FileExistsError:
-		print("Error. Version {} already exists.".format(config.version))
-		exit()
+	if config.mode = filemode.WRITE:
+		try:
+			os.mkdir(config.save["dir"])
+			os.mkdir(config.save["masks_dir"])
+		except FileExistsError:
+			print("Error. Version {} already exists.".format(config.version))
+			exit()
 
 	# write config file
 	with open(config.save["config"], 'w') as config_file:
@@ -260,6 +280,7 @@ def init_config():
 
 	VERSION = 1
 	PROCESSORS = 11
+	MODE = filemode.WRITE
 
 	# image files
 	images = dict(
@@ -303,11 +324,13 @@ def init_config():
 		log = "results/v{0:d}/log.txt".format(VERSION),
 		svm = "results/v{0:d}/svm.pkl".format(VERSION),
 		masks_dir = "results/v{0:d}/masks/".format(VERSION),
+		info = "results/v{0:d}/info.pkl"
 		svm_compression = 3
 	)
 
 	params = Namespace(
 		version = VERSION,
+		mode = MODE,
 		processors = PROCESSORS,
 		mosaic_images = images,
 		img_dir = img_dir,
