@@ -43,34 +43,34 @@ def main():
 		# Save important information
 		save_info(preprocessor, avg_size, label_db, config.save["info"])
 
-		# Train SVM
-		classifier = train_svm(mosaic_features, mosaic_labels, config.svm_params, config.processors)
-		save_classifier(classifier, config.save["svm"], config.save["svm_compression"])
-
-	else:
-
-		# Load info and classifier
-		preprocessor, avg_size, label_db = load_info(config.save["info"])
-		classifier = joblib.load(config.save["svm"])
-
-	# Classify points, write out masks
-	# Not sure whether to put classifier and preprocessor in shared mem or args
-	manager = mp.Manager()
-	shared = manager.Namespace(
-		classifier = classifier,
-		preprocessor = preprocessor,
-		avg_size = avg_size,
-		label_db = label_db,
-		spixel_config = config.superpixel,
-		masks_dir = config.save["masks_dir"],
-	)
-
-	args = zip(images, filenames, it.repeat(shared))
-	args = tqdm(args, total=len(images))
-
-	threadpool = manager.Pool(config.processors)
-	masks = threadpool.starmap(classify, args, chunksize=15)
-	threadpool.close()
+	# 	# Train SVM
+	# 	classifier = train_svm(mosaic_features, mosaic_labels, config.svm_params, config.processors)
+	# 	save_classifier(classifier, config.save["svm"], config.save["svm_compression"])
+	#
+	# else:
+	# 
+	# 	# Load info and classifier
+	# 	preprocessor, avg_size, label_db = load_info(config.save["info"])
+	# 	classifier = joblib.load(config.save["svm"])
+	#
+	# # Classify points, write out masks
+	# # Not sure whether to put classifier and preprocessor in shared mem or args
+	# manager = mp.Manager()
+	# shared = manager.Namespace(
+	# 	classifier = classifier,
+	# 	preprocessor = preprocessor,
+	# 	avg_size = avg_size,
+	# 	label_db = label_db,
+	# 	spixel_config = config.superpixel,
+	# 	masks_dir = config.save["masks_dir"],
+	# )
+	#
+	# args = zip(images, filenames, it.repeat(shared))
+	# args = tqdm(args, total=len(images))
+	#
+	# threadpool = manager.Pool(config.processors)
+	# masks = threadpool.starmap(classify, args, chunksize=15)
+	# threadpool.close()
 
 	# masks = []
 	# for img, base_fn in zip(images, filenames):
