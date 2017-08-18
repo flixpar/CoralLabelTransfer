@@ -255,24 +255,24 @@ def init():
 	# get config
 	config = init_config()
 
-	# make directory for output
-	if config.mode == filemode.WRITE:
-		try:
-			os.mkdir(config.save["dir"])
-			os.mkdir(config.save["masks_dir"])
-		except FileExistsError:
-			print("Error. Version {} already exists.".format(config.version))
-			exit()
-
-	# write config file
-	with open(config.save["config"], 'w') as config_file:
-		yaml.dump(config, config_file)
-
-	# setup logging
-	global saved_stdout
-	saved_stdout = sys.stdout
-	log_file = open(config.save["log"], 'w')
-	sys.stdout = writer(sys.stdout, log_file)
+	# # make directory for output
+	# if config.mode == filemode.WRITE:
+	# 	try:
+	# 		os.mkdir(config.save["dir"])
+	# 		os.mkdir(config.save["masks_dir"])
+	# 	except FileExistsError:
+	# 		print("Error. Version {} already exists.".format(config.version))
+	# 		exit()
+	#
+	# # write config file
+	# with open(config.save["config"], 'w') as config_file:
+	# 	yaml.dump(config, config_file)
+	#
+	# # setup logging
+	# global saved_stdout
+	# saved_stdout = sys.stdout
+	# log_file = open(config.save["log"], 'w')
+	# sys.stdout = writer(sys.stdout, log_file)
 
 	return config
 
