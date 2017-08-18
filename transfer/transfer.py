@@ -48,7 +48,7 @@ def main():
 	# 	save_classifier(classifier, config.save["svm"], config.save["svm_compression"])
 	#
 	# else:
-	# 
+	#
 	# 	# Load info and classifier
 	# 	preprocessor, avg_size, label_db = load_info(config.save["info"])
 	# 	classifier = joblib.load(config.save["svm"])
@@ -256,7 +256,7 @@ def init():
 	config = init_config()
 
 	# make directory for output
-	if config.mode = filemode.WRITE:
+	if config.mode == filemode.WRITE:
 		try:
 			os.mkdir(config.save["dir"])
 			os.mkdir(config.save["masks_dir"])
