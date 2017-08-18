@@ -30,7 +30,7 @@ def main():
 
 	# Segment mosaic
 	mosaic_features, mosaic_labels, avg_size, label_db = get_mosaic_features(mosaic, mosaic_annotated, config.mosaic_superpixels, config.processors)
-    print("Average size: ", avg_size)
+	print("Average size: ", avg_size)
 
 	# Setup preprocessor
 	preprocessor = get_preprocessor(config.preprocessor, mosaic_features)
@@ -259,14 +259,14 @@ def init():
 def init_config():
 
 	VERSION = 1
-	PROCESSORS = 7
+	PROCESSORS = 11
 
 	# image files
 	images = dict(
 		image = "imgs/mosaic.png",
 		annotation = "imgs/mosaic_mask.png"
 	)
-	img_dir = "/media/ml/2tdata/FAN_2012_B4/TAB_2012_B4_pics/Red_55/"
+	img_dir = "/home/chei/felix/data/orthophotos/"
 
 	# superpixels
 	mosaic_superpixels = dict(
@@ -285,7 +285,7 @@ def init_config():
 		normalize = True,
 		reduce_features = True,
 		reducer_type = Reducers.feature_selection,
-		explained_variance = 0.985
+		explained_variance = 0.98
 	)
 
 	# SVM parameter grid
