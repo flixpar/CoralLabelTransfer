@@ -324,7 +324,7 @@ def init_config():
 		log = "results/v{0:d}/log.txt".format(VERSION),
 		svm = "results/v{0:d}/svm.pkl".format(VERSION),
 		masks_dir = "results/v{0:d}/masks/".format(VERSION),
-		info = "results/v{0:d}/info.pkl"
+		info = "results/v{0:d}/info.pkl".format(VERSION),
 		svm_compression = 3
 	)
 
