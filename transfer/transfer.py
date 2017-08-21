@@ -141,6 +141,7 @@ def classify(img_fn, shared):
 	## FORMAT FEATURES: ##
 	features = [pixel.features for pixel in superpixels if pixel is not None]
 	features = np.array(features)
+	print(features.shape)
 
 	## PREPROCESS FEATURES: ##
 	print("\tPreprocessing...")
@@ -152,10 +153,10 @@ def classify(img_fn, shared):
 	predictions = [shared.label_db[p] for p in pred]
 
 	## PRINT: ##
-	print("Printing...")
+	print("\tPrinting...")
 	print(pred)
 	print(predictions)
-	print(label_db)
+	print(shared.label_db)
 
 	## LABEL THE IMAGE: ##
 	print("\tGenerating mask...")
@@ -274,8 +275,8 @@ def init():
 
 def init_config():
 
-	VERSION = 2
-	PROCESSORS = 11
+	VERSION = 3
+	PROCESSORS = 12
 	MODE = filemode.READ
 
 	# image files
