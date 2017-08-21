@@ -48,6 +48,11 @@ def main():
 	train_features = preprocessor.process(train_features)
 	test_features = preprocessor.process(test_features)
 
+	print(train_features.min())
+	print(train_features.max())
+	print(test_features.min())
+	print(test_features.max())
+
 	# Get the classifiers:
 	classifiers = get_classifiers()
 
