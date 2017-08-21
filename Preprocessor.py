@@ -81,7 +81,9 @@ class Preprocessor:
 		initial_feature_size = features.shape[1]
 
 		# Check feature set:
-		assert(np.isfinite(features).all())
+		# assert(np.isfinite(features).all())
+		if not np.isfinite(features).all():
+			print(features)
 
 		# Check args:
 		if not self.normalize and not self.reduce_features:
