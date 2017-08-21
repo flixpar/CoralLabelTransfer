@@ -12,3 +12,5 @@ transfer/imgs
 transfer/results
 *.pkl
 .ropenproject
+.ropenproject
+*/.ropenproject

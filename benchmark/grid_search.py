@@ -1,5 +1,6 @@
 import os
 import sys
+import gc
 import time
 from enum import Enum
 
@@ -24,7 +25,7 @@ from Preprocessor import Preprocessor, Reducers
 from labeling_utils import *
 
 def main():
-
+	
 	config = init()
 
 	src_img, src_labels, search_img, search_labels = read_images(config["images"])
@@ -37,21 +38,39 @@ def main():
 	ref_features = preprocessor.process(ref_features)
 	search_features = preprocessor.process(search_features)
 
+	best_acc = 0.0
+	best_config = {}
 	for svm_params in config["svm_param_grid"]:
 		init_run(config, svm_params)
 
 		classifier = train_svm(ref_features, ref_labels, svm_params, config["PROCESSORS"])
-		save_classifier(classifier, config["save"]["svm"], config["save"]["svm_compression"])
+		# save_classifier(classifier, config["save"]["svm"], config["save"]["svm_compression"])
 
 		pred, pred_labels = predict(classifier, search_features, label_db)
-		save_predictions(pred, config["save"]["predictions"])
+		# save_predictions(pred, config["save"]["predictions"])
 
-		report, acc, confusion = evaluate(search_class_labels, pred_labels)
+		report, acc, iou, precision, confusion = evaluate(search_class_labels, pred_labels)
 		saveConfusionMatrix(confusion, config["classes"], config["save"]["confusion"])
-		save_results(report, acc, confusion, config["save"]["results"])
+		save_results(report, acc, iou, precision, confusion, config["save"]["results"])
+
 		print(report)
 		print("Accuracy: {0:.4f}".format(acc))
+		print("Precision: {0:.4f}".format(precision))
+		print("IOU: {0:.4f}".format(iou))
 		print()
+
+		if acc > best_acc:
+			best_acc = acc
+			best_config = svm_params
+
+		del(classifier)
+		del(pred)
+		del(pred_labels)
+		gc.collect()
+
+	print("\n\nBest SVM Params:")
+	print(best_config)
+	print("Accuracy: {}\n".format(best_acc))
 
 
 def init():
@@ -98,7 +117,7 @@ def get_features(img, mask, config, processors, mode="search", avg_size=None):
 		print("Reference Image:")
 	else:
 		print("Search Image:")
-
+	
 	## OVERSEGMENT: ##
 	print("Segmenting...")
 	spixel_args = (config["approx_num_superpixels"], config["num_levels"], config["iterations"])
@@ -142,6 +161,10 @@ def extract_superpixels(src_img, lbl_img, mask_img, avg_size, num_superpixels, p
 	superpixels = threadpool.starmap(create_spixel, args)
 
 	threadpool.close()
+	del(src_img_shared)
+	del(lbl_img_shared)
+	del(mask_img_shared)
+
 	return superpixels
 
 def create_spixel(*args):
@@ -210,16 +233,20 @@ def evaluate(truth, pred):
 	print("Evaluating...")
 	report = metrics.classification_report(truth, pred)
 	acc = metrics.accuracy_score(truth, pred)
-	confusion = metrics.confusion_matrix(truth, pred)
-	return report, acc, confusion
+	iou = metrics.jaccard_similarity_score(truth, pred)
+	precision = metrics.precision_score(truth, pred, average="weighted")
+	confusion = metrics.confusion_matrix(truth, pred)	
+	return report, acc, iou, precision, confusion
 
-def save_results(report, acc, confusion, filename):
+def save_results(report, acc, iou, precision, confusion, filename):
 	print("Saving results...")
 	results_file = open(filename, 'w')
 	results_file.write(report)
-	results_file.write("\nAccuracy: {0:.4f}\n".format(acc))
+	results_file.write("\nAccuracy: {0:.4f}".format(acc))
+	results_file.write("IOU: {0:.4f}".format(iou))
+	results_file.write("Precision: {0:.4f}\n".format(precision))
 	results_file.write(np.array2string(confusion))
-	results_file.close()
+	results_file.close()	
 
 ####################
 ## SETUP METHODS: ##
@@ -227,8 +254,8 @@ def save_results(report, acc, confusion, filename):
 
 def init_config():
 
-	VERSION = 0
-	PROCESSORS = 11
+	VERSION = 22
+	PROCESSORS = 12
 	CLASSES = 9
 
 	# image files
@@ -241,7 +268,7 @@ def init_config():
 
 	# superpixels
 	superpixels = dict(
-		approx_num_superpixels = 10000,
+		approx_num_superpixels = 8000,
 		num_levels = 5,
 		iterations = 100
 	)
@@ -256,14 +283,22 @@ def init_config():
 
 	# SVM parameter grid
 	parameter_grid = dict(
-		kernel = ["linear", "rbf"],
-		cache_size = [2000],
+		kernel = ["rbf"],
+		cache_size = [2000],	
 		class_weight = ["balanced"],
-		C = [0.01, 0.05, 0.1, 0.5, 0.75, 1.0, 2.0, 5.0, 10.0]
+		gamma = [0.01, 0.001, 0.0005, 0.0001, "auto"],
+		C = [0.05, 0.1, 0.15, 0.2]
 	)
 
 	# create list of SVM parameters
 	'''
+	parameter_grid = dict(
+		kernel = ["linear", "rbf"],
+		cache_size = [2000],
+		verbose = [True],
+		class_weight = ["balanced"],
+		C = [0.01, 0.05, 0.1, 0.5, 0.75, 1.0, 2.0, 5.0, 10.0]
+	)
 	param_grid_len = max([len(v) for v in parameter_grid.values()])
 	svm_param_grid = []
 	for i in range(param_grid_len):
@@ -275,15 +310,18 @@ def init_config():
 	'''
 	svm_param_grid = [dict()]
 	for key in parameter_grid.keys():
-		grid = []
-		for val in parameter_grid[key]:
-			print(key)
-			print(val)
-			print(svm_param_grid[0])
-			entry = [dict(key=val, **e) for e in svm_param_grid]
-			grid.extend(entry)
-			print(entry)
-		svm_param_grid = grid
+		temp = []
+		for e in svm_param_grid:
+			for v in parameter_grid[key]:
+				a = e.copy()
+				a[key] = v
+				temp.append(a)
+		svm_param_grid.extend(temp)
+
+	svm_param_grid = [l for l in svm_param_grid if len(l) == len(parameter_grid)]
+
+	for l in svm_param_grid:
+		print(l)
 
 	# saving
 	save = get_save_paths(VERSION)
@@ -320,3 +358,4 @@ def get_save_paths(VERSION):
 ##########
 if __name__ == '__main__':
 	main()
+
