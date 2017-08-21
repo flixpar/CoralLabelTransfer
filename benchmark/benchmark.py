@@ -35,30 +35,30 @@ def main():
 	# Do all processing to get features:
 	config = init()
 
-	src_img, src_labels, search_img, search_labels = read_images(config.image_paths)
+	train_img, train_lbls, test_img, test_lbls = read_images(config.image_paths)
 
-	ref_features, ref_labels, avg_size, label_db = get_features(src_img, src_labels, config.segment, config.processors, mode="reference")
-	search_features, search_labels, search_class_labels = get_features(search_img, search_labels, config.segment, config.processors, mode="search", avg_size=avg_size)
+	train_features, train_labels, avg_size, label_db = get_features(train_img, train_lbls, config.segment, config.processors, mode="reference")
+	test_features, test_labels, test_classlabels = get_features(test_img, test_lbls, config.segment, config.processors, mode="search", avg_size=avg_size)
 
-	preprocessor = get_preprocessor(config.preprocess, ref_features)
+	preprocessor = get_preprocessor(config.preprocess, train_features)
 
-	ref_features = preprocessor.process(ref_features)
-	search_features = preprocessor.process(search_features)
+	train_features = preprocessor.process(train_features)
+	test_features = preprocessor.process(test_features)
 
 	# Get the classifiers:
 	classifiers = get_classifiers()
 
 	# Try classifiers:
-	for name, classifer in classifiers:
+	for name, classifier in classifiers:
 		init_run(config, name)
 		print("\nStarting {}...".format(name))
 
-		classifier.fit()
+		classifier.fit(train_features, train_labels)
 
-		pred = classifier.predict()
+		pred = classifier.predict(test_features)
 		pred = [id_label_db[p] for p in pred]
 
-		report, acc, iou, precision, confusion = evaluate(search_class_labels, pred_labels)
+		report, acc, iou, precision, confusion = evaluate(test_classlabels, pred)
 		save_results(report, acc, iou, precision, confusion, config.save_path, name)
 		save_confusion_matrix(confusion, config.classes, config.save_path, name)
 
