@@ -89,23 +89,27 @@ class SuperPixel:
 		for theta in range(-40, 60, 20): # will generate angles of -40, -20, 0, 20, 40 degrees
 			roi = self.processImg(src_img, theta)
 			gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
+			assert((gray.shape[0]==self.size[1]) and (gray.shape[1]==self.size[0]))
 
 			hog = feature.hog(gray, **hog_args)
 
 			lbp = feature.local_binary_pattern(gray, **lbp_args)
-			lbp_n_bins = int(lbp.max() + 1)
+			lbp_n_bins = 256 # int(lbp.max() + 1)
 			lbp_hist, _ = np.histogram(lbp, normed=True, bins=lbp_n_bins, range=(0, lbp_n_bins))
+			assert(lbp_hist.size == 256)
 
 			hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
 			r_hist, _ = np.histogram(hsv[:,:,0], bins=64)
 			g_hist, _ = np.histogram(hsv[:,:,1], bins=64)
 			b_hist, _ = np.histogram(hsv[:,:,2], bins=64)
 			hist = np.concatenate((r_hist, g_hist, b_hist))
+			assert(hist.size == 192)
 
 			features.append(hog)
 			features.append(lbp_hist)
 			features.append(hist)
 
+		assert(len(features)==15)
 		result = np.concatenate(features)
 		return result
 
