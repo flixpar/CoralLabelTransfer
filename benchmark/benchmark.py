@@ -26,6 +26,9 @@ from sklearn.tree import DecisionTreeClassifier
 
 from sklearn import metrics
 
+import matplotlib
+matplotlib.use('Agg')
+
 from SuperPixel import SuperPixel
 from Preprocessor import Preprocessor, Reducers
 from labeling_utils import *
