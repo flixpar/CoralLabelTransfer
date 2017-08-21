@@ -231,8 +231,8 @@ def get_classifiers():
 		"MLP": {},
 		"SGD": {},
 		"LinearSVC": {},
-		"LINSVC": {kernel="linear"},
-		"RBFSVC": {kernel="rbf"},
+		"LINSVC": {"kernel":"linear"},
+		"RBFSVC": {"kernel":"rbf"},
 		"DecisionTree": {}
 	}
 	classifiers = {
