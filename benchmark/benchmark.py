@@ -28,6 +28,7 @@ from sklearn import metrics
 
 import matplotlib
 matplotlib.use('Agg')
+import matplotlib.pyplot as plt
 
 from SuperPixel import SuperPixel
 from Preprocessor import Preprocessor, Reducers
@@ -59,16 +60,16 @@ def main():
 	# Try classifiers:
 	for name, classifier in classifiers:
 		init_run(config, name)
-		print("\Running {}...".format(name))
+		print("\tRunning {}...".format(name))
 
 		classifier.fit(train_features, train_labels)
 
 		pred = classifier.predict(test_features)
-		pred = [id_label_db[p] for p in pred]
+		pred = [label_db[p] for p in pred]
 
 		report, acc, iou, precision, confusion = evaluate(test_classlabels, pred)
 		save_results(report, acc, iou, precision, confusion, config.save_path, name)
-		save_confusion_matrix(confusion, config.classes, config.save_path, name)
+		plot_confusion_matrix(confusion, config.classes, config.save_path, name)
 
 		print(report)
 		print("Accuracy: {0:.4f}".format(acc))
@@ -272,8 +273,8 @@ def init_config():
 
 	# superpixels
 	segment = dict(
-		approx_num_superpixels = 8000,
-		num_levels = 5,
+		approx_num_superpixels = 5000,
+		num_levels = 4,
 		iterations = 100
 	)
 
@@ -282,7 +283,7 @@ def init_config():
 		normalize = True,
 		reduce_features = True,
 		reducer_type = Reducers.pca,
-		explained_variance = 0.97
+		explained_variance = 0.96
 	)
 
 	# saving
