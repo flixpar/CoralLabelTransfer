@@ -16,7 +16,7 @@ import multiprocessing as mp
 
 from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.naive_bayes import MultinomialNB
+from sklearn.naive_bayes import GaussianNB
 from sklearn.neighbors import RadiusNeighborsClassifier
 from sklearn.neural_network import MLPClassifier
 from sklearn.linear_model import SGDClassifier
@@ -225,11 +225,11 @@ def init_run(config, name):
 	print(name)
 
 def get_classifiers():
-	enabled_classifier_names = ["GradientBoosting", "RandomForest", "MultinomialNB", "RadiusNeighbors", "MLP", "SGD", "LinearSVC", "LINSVC", "RBFSVC", "DecisionTree"]
+	enabled_classifier_names = ["GradientBoosting", "RandomForest", "GaussianNB", "RadiusNeighbors", "MLP", "SGD", "LinearSVC", "LINSVC", "RBFSVC", "DecisionTree"]
 	params = {
 		"GradientBoosting": {},
 		"RandomForest": {"n_estimators":50},
-		"MultinomialNB": {},
+		"GaussianNB": {},
 		"RadiusNeighbors": {},
 		"MLP": {},
 		"SGD": {},
@@ -241,7 +241,7 @@ def get_classifiers():
 	classifiers = {
 		"GradientBoosting": GradientBoostingClassifier(**params["GradientBoosting"]),
 		"RandomForest": RandomForestClassifier(**params["RandomForest"]),
-		"MultinomialNB": MultinomialNB(**params["MultinomialNB"]),
+		"GaussianNB": GaussianNB(**params["GaussianNB"]),
 		"RadiusNeighbors": RadiusNeighborsClassifier(**params["RadiusNeighbors"]),
 		"MLP": MLPClassifier(**params["MLP"]),
 		"SGD": SGDClassifier(**params["SGD"]),
