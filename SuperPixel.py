@@ -111,6 +111,7 @@ class SuperPixel:
 
 		assert(len(features)==15)
 		result = np.concatenate(features)
+		assert(np.isfinite(result).all())
 		return result
 
 	# given the image of all labels, find the label for this superpixel

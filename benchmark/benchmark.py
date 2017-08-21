@@ -59,7 +59,7 @@ def main():
 	# Try classifiers:
 	for name, classifier in classifiers:
 		init_run(config, name)
-		print("\nStarting {}...".format(name))
+		print("\Running {}...".format(name))
 
 		classifier.fit(train_features, train_labels)
 
