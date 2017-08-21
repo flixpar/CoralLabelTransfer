@@ -32,7 +32,8 @@ class SuperPixel:
 		self.mask = self.cropMask(mask_img)
 		self.features = self.generateFeatures(src_img)
 
-		self.label = self.findLabel(lbl_img)
+		if lbl_img is not None:
+			self.label = self.findLabel(lbl_img)
 
 	# get the min and max coordinates of the superpixel in the input image
 	def getBoundingBox(self, mask_img):
@@ -88,56 +89,28 @@ class SuperPixel:
 		for theta in range(-40, 60, 20): # will generate angles of -40, -20, 0, 20, 40 degrees
 			roi = self.processImg(src_img, theta)
 			gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
+			assert((gray.shape[0]==self.size[1]) and (gray.shape[1]==self.size[0]))
 
 			hog = feature.hog(gray, **hog_args)
 
 			lbp = feature.local_binary_pattern(gray, **lbp_args)
-			lbp_n_bins = int(lbp.max() + 1)
+			lbp_n_bins = 256 # int(lbp.max() + 1)
 			lbp_hist, _ = np.histogram(lbp, normed=True, bins=lbp_n_bins, range=(0, lbp_n_bins))
+			assert(lbp_hist.size == 256)
 
 			hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
 			r_hist, _ = np.histogram(hsv[:,:,0], bins=64)
 			g_hist, _ = np.histogram(hsv[:,:,1], bins=64)
 			b_hist, _ = np.histogram(hsv[:,:,2], bins=64)
 			hist = np.concatenate((r_hist, g_hist, b_hist))
+			assert(hist.size == 192)
 
 			features.append(hog)
 			features.append(lbp_hist)
 			features.append(hist)
 
-			# try using blur as input to edge detection
-			# blur = cv2.GaussianBlur(gray, 5, 0)
-			# or could downsample instead
-			# downsampled = cv2.resize(gray, (30, 30), cv2.INTER_AREA)
-
-			real, imag = filters.gabor(gray, frequency=0.4)
-			gabor = real.flatten()
-
-			scharr = filters.scharr(gray)
-			scharr = scharr.flatten()
-
-			# features.append(gabor)
-
-			# TODO: append other features to list
-			# TODO: try SIFT or ORB as a feature
-
-			# print("hog size: %d" % hog.size)
-			# print("lbp size: %d" % lbp_hist.size)
-			# print("lbp image size: %d" % lbp.size)
-			# print("hist size: %d" % hist.size)
-			# print("gabor size: %d" % gabor.size)
-			# print("scharr size: %d" % scharr.size)
-			#
-			# print("hog shape: " + str(hog.shape))
-			# print("lbp shape: " + str(lbp_hist.shape))
-			# print("lbp image shape: " + str(lbp.shape))
-			# print("hist shape: " + str(hist.shape))
-			# print("gabor shape: " + str(gabor.shape))
-			# print("scharr shape: " + str(scharr.shape))
-
+		assert(len(features)==15)
 		result = np.concatenate(features)
-		# result = np.squeeze(result)
-		# result = np.asarray(features).flatten()
 		return result
 
 	# given the image of all labels, find the label for this superpixel

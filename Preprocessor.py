@@ -41,6 +41,9 @@ class Preprocessor:
 		# Setup:
 		start_time = time.time()
 
+		# Check feature set:
+		assert(np.isfinite(features).all())
+
 		# Normalizer:
 		if self.normalize:
 			standardizer = preprocessing.StandardScaler()
@@ -76,6 +79,9 @@ class Preprocessor:
 		# Setup:
 		start_time = time.time()
 		initial_feature_size = features.shape[1]
+
+		# Check feature set:
+		assert(np.isfinite(features).all())
 
 		# Check args:
 		if not self.normalize and not self.reduce_features:
