@@ -44,30 +44,30 @@ class Preprocessor:
 		# Check feature set:
 		assert(np.isfinite(features).all())
 
-		# Normalizer:
-		if self.normalize:
-			standardizer = preprocessing.StandardScaler()
-			standardizer.fit(features)
-			self.normalizer = standardizer
-
 		# Option 1 (Random Projection):
 		if self.reducer_type == Reducers.random_projection:
 			transformer = random_projection.GaussianRandomProjection()
-			transformer.fit(features)
+			features = transformer.fit_transform(features)
 			self.reducer = transformer
 
 		# Option 2 (Feature Selection):
 		if self.reducer_type == Reducers.feature_selection:
 			threshold = (self.explained_variance) * (1 - self.explained_variance)
 			selector = feature_selection.VarianceThreshold(threshold=threshold)
-			selector.fit(features)
+			features = selector.fit_transform(features)
 			self.reducer = selector
 
 		# Option 3 (PCA):
 		if self.reducer_type == Reducers.pca:
 			pca = decomposition.PCA(n_components=self.explained_variance, svd_solver="full")
-			pca.fit(features)
+			features = pca.fit_transform(features)
 			self.reducer = pca
+
+		# Normalizer:
+		if self.normalize:
+			standardizer = preprocessing.StandardScaler()
+			standardizer.fit(features)
+			self.normalizer = standardizer
 
 		# Calculate elapsed time:
 		end_time = time.time()
@@ -90,12 +90,13 @@ class Preprocessor:
 			print("No preprocessing done.")
 			return features
 
+		# Reduce features:
+		if self.reduce_features:
+			features = self.reducer.transform(features)
+
 		# Standardize:
 		if self.normalize:
 			features = self.normalizer.transform(features)
-
-		if self.reduce_features:
-			features = self.reducer.transform(features)
 
 		# Calculate elapsed time:
 		end_time = time.time()
