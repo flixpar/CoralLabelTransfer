@@ -17,6 +17,9 @@ lbp_args["P"] = 40
 lbp_args["R"] = 5
 lbp_args["method"] = "ror"
 
+ROTATIONS = 5
+ROTATION_SIZE = 20
+
 class SuperPixel:
 
 	def __init__(self, id_num, src_img, lbl_img, mask_img, avg_size):
@@ -86,7 +89,9 @@ class SuperPixel:
 
 		features = []
 
-		for theta in range(-40, 60, 20): # will generate angles of -40, -20, 0, 20, 40 degrees
+		rot_start = int(-1 * (ROTATIONS-1) * ROTATION_SIZE / 2)
+		rot_end = int((ROTATIONS) * ROTATION_SIZE / 2)
+		for theta in range(rot_start, rot_end, ROTATION_SIZE):
 			roi = self.processImg(src_img, theta)
 			gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
 			assert((gray.shape[0]==self.size[1]) and (gray.shape[1]==self.size[0]))

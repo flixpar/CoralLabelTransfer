@@ -55,7 +55,7 @@ def main():
 	print(test_features.max())
 
 	# Get the classifiers:
-	classifiers = get_classifiers()
+	classifiers = sorted(get_classifiers())
 
 	# Try classifiers:
 	for name, classifier in classifiers:
