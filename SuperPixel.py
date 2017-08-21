@@ -95,8 +95,16 @@ class SuperPixel:
 
 			lbp = feature.local_binary_pattern(gray, **lbp_args)
 			lbp_n_bins = 256 # int(lbp.max() + 1)
-			lbp_hist, _ = np.histogram(lbp, normed=True, bins=lbp_n_bins, range=(0, lbp_n_bins))
-			assert(lbp_hist.size == 256)
+			lbp_hist, _ = np.histogram(lbp, density=True, bins=lbp_n_bins)  #, range=(0, lbp_n_bins))
+			assert(lbp_hist.size == lbp_n_bins)
+
+			if not np.isfinite(lbp).all():
+				print("Err: lbp not finite")
+
+			if lbp.max() == 0 and not np.isfinite(lbp_hist).all():
+				print("Err: bad lbp hist.")
+				lbp_hist = np.zeros((lbp_n_bins))
+				lbp_hist[0] = lbp.size
 
 			hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
 			r_hist, _ = np.histogram(hsv[:,:,0], bins=64)
