@@ -243,7 +243,7 @@ def get_classifiers():
 		"MLP": MLPClassifier(**params["MLP"]),
 		"SGD": SGDClassifier(**params["SGD"]),
 		"LinearSVC": LinearSVC(**params["LinearSVC"]),
-		"SVC": SVC(**params["SVC"]),
+		"RBFSVC": SVC(**params["RBFSVC"]),
 		"DecisionTree": DecisionTreeClassifier(**params["DecisionTree"])
 	}
 	enabled_classifiers = [(name, classifier) for name, classifier in classifiers.items() if name in enabled_classifier_names]
