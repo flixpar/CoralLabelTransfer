@@ -300,8 +300,8 @@ def init_config():
 	preprocessor = dict(
 		normalize = True,
 		reduce_features = True,
-		reducer_type = Reducers.feature_selection,
-		explained_variance = 0.985
+		reducer_type = Reducers.pca,
+		explained_variance = 0.98
 	)
 
 	# SVM parameter grid

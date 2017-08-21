@@ -83,7 +83,7 @@ class Preprocessor:
 		# Check feature set:
 		# assert(np.isfinite(features).all())
 		if not np.isfinite(features).all():
-			print(features)
+			print("Error. Invalid features.")
 
 		# Check args:
 		if not self.normalize and not self.reduce_features:
