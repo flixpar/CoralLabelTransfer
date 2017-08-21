@@ -143,6 +143,7 @@ def classify(img_fn, shared):
 	features = np.array(features)
 
 	## PREPROCESS FEATURES: ##
+	print("\tPreprocessing...")
 	features = preprocessor.process(features)
 
 	## PREDICT CLASSES FOR FEATURES: ##
