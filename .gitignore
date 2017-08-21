@@ -11,6 +11,7 @@ imgs
 transfer/imgs
 transfer/results
 *.pkl
-.ropenproject
-.ropenproject
-*/.ropenproject
+.ropeproject
+transfer/.ropeproject
+benchmark/.ropeproject
+*/.ropeproject

@@ -5,6 +5,7 @@ import numpy as np
 import random
 from tqdm import tqdm
 import matplotlib.pyplot as plt
+from enum import Enum
 
 # for now we are using the SEEDS algortithm to segment the image into superpixels
 def oversegment(img, args):
@@ -21,7 +22,7 @@ def oversegment(img, args):
 	return labels, num_superpixels
 
 # takes the superpixel mask and calculates the average size of the superpixels
-def calcAvgSize(mask_img, num_superpixels):
+def calc_avg_size(mask_img, num_superpixels):
 
 	avg_width = 0
 	avg_height = 0
@@ -86,6 +87,14 @@ def plotConfusionMatrix(cfm, num_classes, out_fn):
 	# save image and display
 	plt.savefig(out_fn, dpi=100)
 	plt.show()
+
+class Namespace:
+	def __init__(self, **kwargs):
+		self.__dict__.update(kwargs)
+
+class filemode(Enum):
+	READ = 0
+	WRITE = 1
 
 class writer:
 	def __init__(self, *writers):
