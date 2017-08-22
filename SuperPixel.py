@@ -122,7 +122,7 @@ class SuperPixel:
 			features.append(lbp_hist)
 			features.append(hist)
 
-		assert(len(features)==15)
+		assert(len(features)==3*ROTATIONS)
 		result = np.concatenate(features)
 		assert(np.isfinite(result).all())
 		return result

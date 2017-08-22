@@ -49,11 +49,6 @@ def main():
 	train_features = preprocessor.process(train_features)
 	test_features = preprocessor.process(test_features)
 
-	print(train_features.min())
-	print(train_features.max())
-	print(test_features.min())
-	print(test_features.max())
-
 	# Get the classifiers:
 	classifiers = sorted(get_classifiers())
 
@@ -61,22 +56,25 @@ def main():
 	for name, classifier in classifiers:
 		init_run(config, name)
 		print("\tRunning {}...".format(name))
+		start_time = time.time()
 
 		print("\tTraining...")
 		classifier.fit(train_features, train_labels)
 
-		print("\Predicting...")
+		print("\tPredicting...")
 		pred = classifier.predict(test_features)
 		pred = [label_db[p] for p in pred]
 
 		report, acc, iou, precision, confusion = evaluate(test_classlabels, pred)
 		save_results(report, acc, iou, precision, confusion, config.save_path, name)
 		plot_confusion_matrix(confusion, config.classes, config.save_path, name)
+		elapsed_time = time.time() - start_time
 
 		print(report)
 		print("Accuracy: {0:.4f}".format(acc))
 		print("Precision: {0:.4f}".format(precision))
 		print("IOU: {0:.4f}".format(iou))
+		print("Took {0:.2f} seconds".format(elapsed_time))
 		print()
 
 		del(classifier)
@@ -233,9 +231,13 @@ def init_run(config, name):
 	print(name)
 
 def get_classifiers():
-	enabled_classifier_names = ["GradientBoosting", "RandomForest", "GaussianNB", "RadiusNeighbors", "MLP", "SGD", "LinearSVC", "LINSVC", "RBFSVC", "DecisionTree"]
+	enabled_classifier_names = ["RandomForest", "GaussianNB", "MLP", "SGD", "LinearSVC", "LINSVC", "RBFSVC"]
+	# disabled: 
+	# GradientBoosting - takes too long / not training
+	# DecisionTree - long, not great results
+	# RadiusNeighbors - didn't work
 	params = {
-		"GradientBoosting": {},
+		"GradientBoosting": {"verbose":1},
 		"RandomForest": {"n_estimators":50},
 		"GaussianNB": {},
 		"RadiusNeighbors": {},
@@ -275,7 +277,7 @@ def init_config():
 
 	# superpixels
 	segment = dict(
-		approx_num_superpixels = 5000,
+		approx_num_superpixels = 8000,
 		num_levels = 4,
 		iterations = 100
 	)

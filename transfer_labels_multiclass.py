@@ -32,9 +32,9 @@ from labeling_utils import *
 ## CONFIG: ##
 #############
 
-VERSION = 13
+VERSION = 11
 PROCESSORS = 7
-CLASSIFIER_JOBS = 4
+CLASSIFIER_JOBS = 6
 
 # image files
 image_config = dict(
@@ -47,7 +47,7 @@ image_config = dict(
 # superpixels
 superpixel_config = dict(
 	approx_num_superpixels = 10000,
-	num_levels = 5,
+	num_levels = 6,
 	iterations = 100
 )
 
@@ -55,22 +55,23 @@ superpixel_config = dict(
 preprocessor_config = dict(
 	normalize = True,
 	reduce_features = True,
-	reducer_type = Reducers.pca,
-	explained_variance = 0.98
+	reducer_type = Reducers.feature_selection,
+	explained_variance = 0.9
 )
 
 # SVM config
-SVM_TYPE = "LIBSVM"
+SVM_TYPE = "LIBLINEAR"
 libsvm_config = dict(
 	kernel = "rbf",
-	C = 0.1,
+	C = 0.05,
 	probability = False,
 	cache_size = 2000,
 	class_weight = "balanced"
 )
 liblinear_config = dict(
-	C = 0.1,
-	loss = "hinge"
+	C = 0.05,
+	loss = "hinge",
+	class_weight = "balanced",
 )
 
 # saving
@@ -78,7 +79,7 @@ class filemode(Enum):
 	READ = 0
 	WRITE = 1
 saveconfig = dict(
-	superpixels = filemode.READ,
+	superpixels = filemode.WRITE,
 	training = filemode.WRITE,
 	prediction = filemode.WRITE,
 	svm_compression = 3
@@ -161,8 +162,8 @@ def main():
 		search_segment_mask, search_num_superpixels = oversegment(search_img, superpixel_args)
 
 		print("Calculating average superpixel shape...")
-		avg_size = calcAvgSize(src_segment_mask, int(src_num_superpixels/4))
-		avg_size_search = calcAvgSize(search_segment_mask, int(search_num_superpixels/4))
+		avg_size = calc_avg_size(src_segment_mask, int(src_num_superpixels/4))
+		avg_size_search = calc_avg_size(search_segment_mask, int(search_num_superpixels/4))
 
 		print("average size: " + str(avg_size))
 		print("search average size: " + str(avg_size_search))
