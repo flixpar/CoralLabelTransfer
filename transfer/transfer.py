@@ -74,20 +74,6 @@ def main():
 	masks = threadpool.starmap(classify, args)
 	threadpool.close()
 
-	# k = Namespace(
-	# 	preprocessor = preprocessor,
-	# 	avg_size = avg_size,
-	# 	label_db = label_db,
-	# 	spixel_config = config.superpixel,
-	# 	masks_dir = config.save["masks_dir"]
-	# )
-	#
-	# masks = []
-	# for i in range(len(images)):
-	# 	start_time = time.time()
-	# 	masks.append(classify(images[i], k))
-	# 	print("Classifying image took {} seconds.".format(time.time() - start_time))
-
 #####################
 ## HELPER METHODS: ##
 #####################
@@ -141,7 +127,11 @@ def classify(img_fn, shared):
 	## FORMAT FEATURES: ##
 	features = [pixel.features for pixel in superpixels if pixel is not None]
 	features = np.array(features)
-	print(features.shape)
+
+	labels = [pixel.id for pixel in superpixels if pixel is not None]
+	invalid_spixels = superpixels.count(None)
+	if invalid_spixels > 0:
+		print("\tFound {} invalid superpixels".format(invalid_spixels))
 
 	## PREPROCESS FEATURES: ##
 	print("\tPreprocessing...")
@@ -152,18 +142,18 @@ def classify(img_fn, shared):
 	pred = classifier.predict(features)
 	predictions = [shared.label_db[p] for p in pred]
 
-	## PRINT: ##
-	print("\tPrinting...")
-	print(pred)
-	print(predictions)
-	print(shared.label_db)
+	## DEBUG: ##
+	# print("\tPrinting...")
+	# print(pred)
+	# print(predictions)
+	# print(shared.label_db)
 
 	## LABEL THE IMAGE: ##
 	print("\tGenerating mask...")
 	mask = np.zeros(segment_mask.shape, dtype=np.uint8)
-	for i in range(num_spixels):
+	for i, l in enumerate(labels):
 		if predictions[i] != 0:
-			mask[np.where(segment_mask == i)] = predictions[i]
+			mask[np.where(segment_mask == l)] = predictions[i]
 
 	## WRITE OUT MASK: ##
 	mask_path = get_mask_filepath(shared.masks_dir, img_fn)

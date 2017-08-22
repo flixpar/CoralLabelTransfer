@@ -62,8 +62,10 @@ def main():
 		init_run(config, name)
 		print("\tRunning {}...".format(name))
 
+		print("\tTraining...")
 		classifier.fit(train_features, train_labels)
 
+		print("\Predicting...")
 		pred = classifier.predict(test_features)
 		pred = [label_db[p] for p in pred]
 
