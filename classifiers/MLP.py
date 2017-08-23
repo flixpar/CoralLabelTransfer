@@ -218,20 +218,20 @@ def init():
 
 def init_config():
 
-	VERSION = 1
+	VERSION = 12
 	PROCESSORS = 12
 	CLASSES = 9
 
 	# hyper parameters:
 	hyperparams = dict(
-		hidden_layer_sizes = (100,),
-		activation = "relu",
-		solver = "adam",
-		learning_rate_init = 0.001,
-		max_iter = 200,
+		hidden_layer_sizes = (300,), # default: (100,)
+		activation = "relu", # default: relu
+		solver = "adam", # default: adam
+		learning_rate_init = 0.00005, # default: 0.001
+		max_iter = 300,
 		shuffle = True,
 		verbose =  True,
-		warm_start = False,
+		warm_start = True, # default: False
 	)
 
 	# image files
@@ -254,16 +254,16 @@ def init_config():
 		normalize = True,
 		reduce_features = True,
 		reducer_type = Reducers.pca,
-		explained_variance = 0.92
+		explained_variance = 0.85
 	)
 
 	# saving
-	regenerate_features = True
+	regenerate_features = False
 	save_path = dict(
 		log = "results/mlp_v{}_log.txt".format(VERSION),
 		results = "results/mlp_v{}_results.txt".format(VERSION),
-		train_superpixels = "saves/train_features.pkl",
-		test_superpixels = "saves/test_features.pkl",
+		train_features = "saves/train_features.pkl",
+		test_features = "saves/test_features.pkl",
 	)
 
 	params = Namespace(
@@ -274,7 +274,7 @@ def init_config():
 		preprocess = preprocessor,
 		save_path = save_path,
 		hyperparams = hyperparams,
-		regenerate_superpixels = regenerate_superpixels,
+		regenerate_features = regenerate_features,
 	)
 
 	return params

@@ -70,12 +70,18 @@ def main():
 		train_file.close()
 		test_file.close()
 
+	# Make some testing data:
+	X_test = train_features[100:200, :]
+	y_test = train_labels[100:200]
+	eval_set = [(X_test, y_test)]
+
 	start_time = time.time()
 
-	classifier = xgb.XGBoostClassifier(**config.hyperparams)
+	# classifier = xgb.XGBClassifier(**config.hyperparams)
 
 	print("\tTraining...")
-	classifier.fit(train_features, train_labels)
+	# classifier.fit(train_features, train_labels)
+	classifier.fit(train_features, train_labels, eval_set=eval_set, eval_metric="mlogloss", verbose=True, early_stopping_rounds=3)
 
 	print("\tPredicting...")
 	pred = classifier.predict(test_features)
@@ -224,7 +230,9 @@ def init_config():
 
 	# hyper parameters:
 	hyperparams = dict(
-
+		n_jobs = 10,
+		silent = False,
+		n_estimators = 2,
 	)
 
 	# image files
@@ -251,12 +259,12 @@ def init_config():
 	)
 
 	# saving
-	regenerate_features = True
+	regenerate_features = False
 	save_path = dict(
 		log = "results/xgb_v{}_log.txt".format(VERSION),
 		results = "results/xgb_v{}_results.txt".format(VERSION),
-		train_superpixels = "saves/train_features.pkl",
-		test_superpixels = "saves/test_features.pkl",
+		train_features = "saves/train_features.pkl",
+		test_features = "saves/test_features.pkl",
 	)
 
 	params = Namespace(
@@ -267,7 +275,7 @@ def init_config():
 		preprocess = preprocessor,
 		save_path = save_path,
 		hyperparams = hyperparams,
-		regenerate_superpixels = regenerate_superpixels,
+		regenerate_features = regenerate_features,
 	)
 
 	return params
@@ -275,6 +283,5 @@ def init_config():
 ##########
 ## RUN: ##
 ##########
-if __name__ == '__main__':
-	os.environ["OMP_NUM_THREADS"] = "10"
+if __name__ == '__main__':	
 	main()
