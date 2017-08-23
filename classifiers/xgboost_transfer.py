@@ -71,17 +71,19 @@ def main():
 		test_file.close()
 
 	# Make some testing data:
-	X_test = train_features[100:200, :]
-	y_test = train_labels[100:200]
-	eval_set = [(X_test, y_test)]
+	# X_test = train_features[100:200, :]
+	# y_test = train_labels[100:200]
+	# eval_set = [(X_test, y_test)]
+
+	# Setup data:
+	xg_train = xgb.DMatrix(train_features, label=train_labels)
+	xg_test = xgb.DMatrix(test_features)
+	xgb_params = {"max_depth": 2, "eta": 0.4, "silent": 0, "objective":"multi:softmax", "num_class": len(train_features), "nthread": 6}
 
 	start_time = time.time()
 
-	# classifier = xgb.XGBClassifier(**config.hyperparams)
-
 	print("\tTraining...")
-	# classifier.fit(train_features, train_labels)
-	classifier.fit(train_features, train_labels, eval_set=eval_set, eval_metric="mlogloss", verbose=True, early_stopping_rounds=3)
+	classifier = xgb.train(xgb_params, xg_train, num_boost_round=3)
 
 	print("\tPredicting...")
 	pred = classifier.predict(test_features)
@@ -283,5 +285,5 @@ def init_config():
 ##########
 ## RUN: ##
 ##########
-if __name__ == '__main__':	
+if __name__ == '__main__':
 	main()
