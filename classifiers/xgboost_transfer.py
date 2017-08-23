@@ -70,26 +70,24 @@ def main():
 		train_file.close()
 		test_file.close()
 
-	# Make some testing data:
-	# X_test = train_features[100:200, :]
-	# y_test = train_labels[100:200]
-	# eval_set = [(X_test, y_test)]
-
 	# Setup data:
 	xg_train = xgb.DMatrix(train_features, label=train_labels)
 	xg_test = xgb.DMatrix(test_features)
-	xgb_params = {"max_depth": 2, "eta": 0.4, "silent": 0, "objective":"multi:softmax", "num_class": len(train_features), "nthread": 6}
+	rounds = 10
+	xgb_params = {"max_depth": 3, "eta": 0.1, "silent": 1, "objective":"multi:softmax", "num_class": len(train_features), "nthread": 12}
 
+	print("Training...")
 	start_time = time.time()
-
-	print("\tTraining...")
-	classifier = xgb.train(xgb_params, xg_train, num_boost_round=3)
-
-	print("\tPredicting...")
-	pred = classifier.predict(test_features)
-	pred = [label_db[p] for p in pred]
-
+	classifier = xgb.train(xgb_params, xg_train, num_boost_round=rounds)
 	elapsed_time = time.time() - start_time
+	print("Training took {0:.2f} seconds".format(elapsed_time))
+
+	print("Predicting...")
+	start_time = time.time()
+	pred = classifier.predict(xg_test)
+	pred = [label_db[p] for p in pred]
+	elapsed_time = time.time() - start_time
+	print("Predicting took {0:.2f} seconds".format(elapsed_time))
 
 	report, acc, iou, precision, confusion = evaluate(test_classlabels, pred)
 	save_results(report, acc, iou, precision, confusion, config.save_path["results"])
@@ -99,7 +97,6 @@ def main():
 	print("Accuracy: {0:.4f}".format(acc))
 	print("Precision: {0:.4f}".format(precision))
 	print("IOU: {0:.4f}".format(iou))
-	print("Took {0:.2f} seconds".format(elapsed_time))
 	print()
 
 #####################
@@ -226,15 +223,12 @@ def init():
 
 def init_config():
 
-	VERSION = 1
+	VERSION = 2
 	PROCESSORS = 12
 	CLASSES = 9
 
 	# hyper parameters:
 	hyperparams = dict(
-		n_jobs = 10,
-		silent = False,
-		n_estimators = 2,
 	)
 
 	# image files
@@ -247,7 +241,7 @@ def init_config():
 
 	# superpixels
 	segment = dict(
-		approx_num_superpixels = 6000,
+		approx_num_superpixels = 10000,
 		num_levels = 5,
 		iterations = 100
 	)
@@ -257,11 +251,11 @@ def init_config():
 		normalize = True,
 		reduce_features = True,
 		reducer_type = Reducers.pca,
-		explained_variance = 0.95
+		explained_variance = 0.98
 	)
 
 	# saving
-	regenerate_features = False
+	regenerate_features = True
 	save_path = dict(
 		log = "results/xgb_v{}_log.txt".format(VERSION),
 		results = "results/xgb_v{}_results.txt".format(VERSION),
