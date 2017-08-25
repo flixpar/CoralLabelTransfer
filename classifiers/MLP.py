@@ -218,20 +218,21 @@ def init():
 
 def init_config():
 
-	VERSION = 12
+	VERSION = 33
 	PROCESSORS = 12
 	CLASSES = 9
 
 	# hyper parameters:
 	hyperparams = dict(
-		hidden_layer_sizes = (300,), # default: (100,)
+		hidden_layer_sizes = (500), # default: (100,)
 		activation = "relu", # default: relu
+		alpha = 0.0,
 		solver = "adam", # default: adam
-		learning_rate_init = 0.00005, # default: 0.001
-		max_iter = 300,
+		learning_rate_init = 0.0002, # default: 0.001
+		max_iter = 500,
 		shuffle = True,
 		verbose =  True,
-		warm_start = True, # default: False
+		warm_start = False, # default: False
 	)
 
 	# image files
@@ -244,21 +245,21 @@ def init_config():
 
 	# superpixels
 	segment = dict(
-		approx_num_superpixels = 10000,
-		num_levels = 5,
-		iterations = 100
+		approx_num_superpixels = 12000,
+		num_levels = 7,
+		iterations = 400
 	)
 
 	# preprocessor
 	preprocessor = dict(
 		normalize = True,
 		reduce_features = True,
-		reducer_type = Reducers.pca,
-		explained_variance = 0.85
+		reducer_type = Reducers.feature_selection,
+		explained_variance = 0.99
 	)
 
 	# saving
-	regenerate_features = False
+	regenerate_features = True
 	save_path = dict(
 		log = "results/mlp_v{}_log.txt".format(VERSION),
 		results = "results/mlp_v{}_results.txt".format(VERSION),

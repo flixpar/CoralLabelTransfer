@@ -14,7 +14,7 @@ from tqdm import tqdm
 import itertools as it
 import multiprocessing as mp
 
-import xgboost as xgb
+from sklearn.naive_bayes import GaussianNB
 from sklearn import metrics
 
 import matplotlib
@@ -28,7 +28,7 @@ from labeling_utils import *
 def main():
 
 	config = init()
-	print("XGBoostClassifier")
+	print("Gaussian Naive Bayes Classifier")
 	print(config.hyperparams)
 
 	train_img, train_lbls, test_img, test_lbls = read_images(config.image_paths)
@@ -70,25 +70,18 @@ def main():
 		train_file.close()
 		test_file.close()
 
-	# Setup data:
-	xg_train = xgb.DMatrix(train_features, label=train_labels)
-	xg_test = xgb.DMatrix(test_features)
-	# xg_eval = xgb.DMatrix(test_features[:50,:], label=test_labels[:50])
-	rounds = 5
-	xgb_params = {"max_depth": 3, "eta": 0.2, "silent": 1, "objective":"multi:softmax", "num_class": len(train_features), "nthread": 12}
-
-	print("Training...")
 	start_time = time.time()
-	classifier = xgb.train(xgb_params, xg_train, num_boost_round=rounds) # evals=[(xg_eval, 'eval')], verbose_eval=True)
-	elapsed_time = time.time() - start_time
-	print("Training took {0:.2f} seconds".format(elapsed_time))
 
-	print("Predicting...")
-	start_time = time.time()
-	pred = classifier.predict(xg_test)
+	classifier = GaussianNB(**config.hyperparams)
+
+	print("\tTraining...")
+	classifier.fit(train_features, train_labels)
+
+	print("\tPredicting...")
+	pred = classifier.predict(test_features)
 	pred = [label_db[p] for p in pred]
+
 	elapsed_time = time.time() - start_time
-	print("Predicting took {0:.2f} seconds".format(elapsed_time))
 
 	report, acc, iou, precision, confusion = evaluate(test_classlabels, pred)
 	save_results(report, acc, iou, precision, confusion, config.save_path["results"])
@@ -98,6 +91,7 @@ def main():
 	print("Accuracy: {0:.4f}".format(acc))
 	print("Precision: {0:.4f}".format(precision))
 	print("IOU: {0:.4f}".format(iou))
+	print("Took {0:.2f} seconds".format(elapsed_time))
 	print()
 
 #####################
@@ -224,7 +218,7 @@ def init():
 
 def init_config():
 
-	VERSION = 3
+	VERSION = 2
 	PROCESSORS = 12
 	CLASSES = 9
 
@@ -242,9 +236,9 @@ def init_config():
 
 	# superpixels
 	segment = dict(
-		approx_num_superpixels = 10000,
-		num_levels = 5,
-		iterations = 100
+		approx_num_superpixels = 12000,
+		num_levels = 7,
+		iterations = 400
 	)
 
 	# preprocessor
@@ -252,14 +246,14 @@ def init_config():
 		normalize = True,
 		reduce_features = True,
 		reducer_type = Reducers.pca,
-		explained_variance = 0.95
+		explained_variance = 0.995
 	)
 
 	# saving
 	regenerate_features = True
 	save_path = dict(
-		log = "results/xgb_v{}_log.txt".format(VERSION),
-		results = "results/xgb_v{}_results.txt".format(VERSION),
+		log = "results/gaussiannb_v{}_log.txt".format(VERSION),
+		results = "results/gaussiannb_v{}_results.txt".format(VERSION),
 		train_features = "saves/train_features.pkl",
 		test_features = "saves/test_features.pkl",
 	)

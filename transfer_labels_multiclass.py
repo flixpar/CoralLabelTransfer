@@ -24,6 +24,9 @@ from sklearn.svm import LinearSVC, SVC
 from sklearn import metrics
 from sklearn.externals import joblib
 
+import matplotlib
+matplotlib.use('Agg')
+
 from SuperPixel import SuperPixel
 from Preprocessor import Preprocessor, Reducers
 from labeling_utils import *
@@ -32,9 +35,9 @@ from labeling_utils import *
 ## CONFIG: ##
 #############
 
-VERSION = 11
-PROCESSORS = 7
-CLASSIFIER_JOBS = 6
+VERSION = 13
+PROCESSORS = 12
+CLASSIFIER_JOBS = 12
 
 # image files
 image_config = dict(
@@ -48,7 +51,7 @@ image_config = dict(
 superpixel_config = dict(
 	approx_num_superpixels = 10000,
 	num_levels = 6,
-	iterations = 100
+	iterations = 150
 )
 
 # preprocessor
@@ -56,11 +59,11 @@ preprocessor_config = dict(
 	normalize = True,
 	reduce_features = True,
 	reducer_type = Reducers.feature_selection,
-	explained_variance = 0.9
+	explained_variance = 0.99
 )
 
 # SVM config
-SVM_TYPE = "LIBLINEAR"
+SVM_TYPE = "LIBSVM"
 libsvm_config = dict(
 	kernel = "rbf",
 	C = 0.05,
